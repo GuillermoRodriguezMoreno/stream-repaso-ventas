@@ -116,7 +116,12 @@ class StreamsTest {
 			
 			List<Pedido> list = pedHome.findAll();
 				
-			//TODO STREAMS	
+			//TODO STREAMS
+			List<Pedido> newList = list.stream().
+												filter(ped -> ped.getFecha().after(ultimoDia2016) && ped.getTotal() > 500)
+												.collect(toList());
+
+			newList.forEach(System.out::println);
 						
 			pedHome.commitTransaction();
 		}
@@ -143,7 +148,11 @@ class StreamsTest {
 			List<Cliente> list = cliHome.findAll();
 			
 			//TODO STREAMS		
-		
+
+			List<Integer> clientesSinPedidos = clientes.stream()
+					.filter(cliente -> pedidos.stream().noneMatch(pedido -> pedido.getIdCliente() == cliente.getId()))
+					.map(Cliente::getId)
+					.collect(Collectors.toList());
 			cliHome.commitTransaction();
 			
 		}
@@ -167,7 +176,9 @@ class StreamsTest {
 			List<Comercial> list = comHome.findAll();		
 			
 			//TODO STREAMS		
-				
+			Optional<Double> comisionMaxima = comerciales.stream()
+					.map(Comercial::getComision)
+					.max(Double::compare);
 			comHome.commitTransaction();
 			
 		}
@@ -179,7 +190,7 @@ class StreamsTest {
 	}
 	
 	/**
-	 * 4. Devuelve el identificador, nombre y primer apellido de aquellos clientes cuyo segundo apellido no es NULL. 
+	 * 4. Devuelve el identificador, nombre y primer apellido de aquellos clientes cuyo segundo apellido no es NULL.
 	 * El listado deberá estar ordenado alfabéticamente por apellidos y nombre.
 	 */
 	@Test
@@ -193,7 +204,16 @@ class StreamsTest {
 			List<Cliente> list = cliHome.findAll();
 			
 			//TODO STREAMS
-			
+			List<Cliente> clientesConSegundoApellido = clientes.stream()
+					.filter(cliente -> cliente.getApellido2() != null)
+					.sorted(Comparator.comparing(Cliente::getApellido1)
+							.thenComparing(Cliente::getNombre))
+					.collect(Collectors.toList());
+
+			clientesConSegundoApellido.forEach(cliente -> System.out.println(
+					"ID: " + cliente.getId() +
+							", Nombre: " + cliente.getNombre() +
+							", Apellido1: " + cliente.getApellido1()));
 			cliHome.commitTransaction();
 			
 		}
@@ -218,7 +238,11 @@ class StreamsTest {
 			List<Comercial> list = comHome.findAll();		
 			
 			//TODO STREAMS
-			
+			List<String> nombresComercialesFiltrados = comerciales.stream()
+					.map(Comercial::getNombre)
+					.filter(nombre -> nombre.endsWith("el") || nombre.endsWith("o"))
+					.distinct()
+					.collect(Collectors.toList());
 			comHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -242,7 +266,12 @@ class StreamsTest {
 			List<Pedido> list = pedHome.findAll();
 						
 			//TODO STREAMS
-		
+			List<Cliente> clientesConPedidos2017 = pedidos.stream()
+					.filter(pedido -> pedido.getFecha().getYear() == 2017 && pedido.getTotal() >= 300 && pedido.getTotal() <= 1000)
+					.map(pedido -> clientes.stream().filter(cliente -> cliente.getId() == pedido.getIdCliente()).findFirst().orElse(null))
+					.filter(cliente -> cliente != null)
+					.distinct()
+					.collect(Collectors.toList());
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -268,7 +297,11 @@ class StreamsTest {
 			List<Comercial> list = comHome.findAll();		
 			
 			//TODO STREAMS
-			
+
+			OptionalDouble mediaPedidosDanielSaez = pedidos.stream()
+					.filter(pedido -> pedido.getComercial().getNombre().equals(nombreComercial))
+					.mapToDouble(Pedido::getTotal)
+					.average();
 			comHome.commitTransaction();
 			
 		}
@@ -295,8 +328,10 @@ class StreamsTest {
 			List<Pedido> list = pedHome.findAll();
 						
 			//TODO STREAMS
-			
-			
+
+			List<Pedido> pedidosOrdenadosPorFecha = pedidos.stream()
+					.sorted((pedido1, pedido2) -> pedido2.getFecha().compareTo(pedido1.getFecha()))
+					.collect(Collectors.toList());
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -319,7 +354,10 @@ class StreamsTest {
 			List<Pedido> list = pedHome.findAll();
 						
 			//TODO STREAMS
-			
+			List<Pedido> dosPedidosDeMayorValor = pedidos.stream()
+					.sorted(Comparator.comparingDouble(Pedido::getTotal).reversed())
+					.limit(2)
+					.collect(Collectors.toList());
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -344,7 +382,10 @@ class StreamsTest {
 						
 			
 			//TODO STREAMS
-			
+			List<Integer> clientesConPedidos = pedidos.stream()
+					.map(Pedido::getIdCliente)
+					.distinct()
+					.collect(Collectors.toList())
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -369,7 +410,10 @@ class StreamsTest {
 			List<Comercial> list = comHome.findAll();		
 			
 			//TODO STREAMS
-			
+			List<String> comercialesConComisionEntre05y11 = comerciales.stream()
+					.filter(comercial -> comercial.getComision() >= 0.05 && comercial.getComision() <= 0.11)
+					.map(comercial -> comercial.getNombre() + " " + comercial.getApellido1() + " " + comercial.getApellido2())
+					.collect(Collectors.toList());
 			comHome.commitTransaction();
 			
 		}
@@ -397,8 +441,10 @@ class StreamsTest {
 			List<Comercial> list = comHome.findAll();		
 			
 			//TODO STREAMS
-			
-			
+
+			OptionalDouble comisionMinima = comerciales.stream()
+					.mapToDouble(Comercial::getComision)
+					.min();
 			comHome.commitTransaction();
 			
 		}
@@ -427,8 +473,14 @@ class StreamsTest {
 			List<Comercial> list = comHome.findAll();		
 			
 			//TODO STREAMS
-			
-			
+
+			List<String> nombresClientesFiltrados = clientes.stream()
+					.filter(cliente -> (cliente.getNombre().startsWith("A") && cliente.getNombre().endsWith("n"))
+							|| cliente.getNombre().startsWith("P"))
+					.map(Cliente::getNombre)
+					.sorted()
+					.collect(Collectors.toList());
+
 			comHome.commitTransaction();
 			
 		}
@@ -455,7 +507,7 @@ class StreamsTest {
 			List<Cliente> list = cliHome.findAll();
 			
 			//TODO STREAMS
-			
+
 			
 			cliHome.commitTransaction();
 			
@@ -482,7 +534,12 @@ class StreamsTest {
 			List<Cliente> list = cliHome.findAll();
 			
 			//TODO STREAMS
-			
+			List<Cliente> clientesNoEmpiezanPorA = clientes.stream()
+					.filter(cliente -> !cliente.getNombre().startsWith("A"))
+					.sorted(Comparator.comparing(Cliente::getNombre)
+							.thenComparing(Cliente::getApellido1)
+							.thenComparing(Cliente::getApellido2))
+					.collect(Collectors.toList());
 			
 			cliHome.commitTransaction();
 			
@@ -511,7 +568,14 @@ class StreamsTest {
 						
 			
 			//TODO STREAMS
-			
+			List<Cliente> clientesConPedidos = pedidos.stream()
+					.map(pedido -> clientes.stream().filter(cliente -> cliente.getId() == pedido.getIdCliente()).findFirst().orElse(null))
+					.filter(cliente -> cliente != null)
+					.distinct()
+					.sorted(Comparator.comparing(Cliente::getApellido1)
+							.thenComparing(Cliente::getApellido2)
+							.thenComparing(Cliente::getNombre))
+					.collect(Collectors.toList());
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -546,7 +610,19 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Cliente> list = cliHome.findAll();
 			
 			//TODO STREAMS
-			
+			Map<Cliente, List<Pedido>> pedidosPorCliente = pedidos.stream()
+					.map(pedido -> clientes.stream().filter(cliente -> cliente.getId() == pedido.getIdCliente()).findFirst().orElse(null))
+					.filter(cliente -> cliente != null)
+					.collect(Collectors.groupingBy(cliente -> cliente,
+							Collectors.mapping(pedido -> pedido, Collectors.toList())));
+
+			pedidosPorCliente.entrySet().stream()
+					.sorted(Comparator.comparing(entry -> entry.getKey().getNombre() + " " +
+							entry.getKey().getApellido1() + " " + entry.getKey().getApellido2()))
+					.forEach(entry -> {
+						System.out.println(entry.getKey());
+						entry.getValue().forEach(pedido -> System.out.println("\t" + pedido));
+					});
 			
 			cliHome.commitTransaction();
 			
@@ -571,9 +647,20 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 		
 			comHome.beginTransaction();
 			
-			List<Comercial> list = comHome.findAll();		
-		
-			
+			List<Comercial> list = comHome.findAll();
+
+			Map<Comercial, List<Pedido>> pedidosPorComercial = pedidos.stream()
+					.map(Pedido::getComercial)
+					.filter(comercial -> comercial != null)
+					.collect(Collectors.groupingBy(comercial -> comercial,
+							Collectors.mapping(pedido -> pedido, Collectors.toList())));
+
+			pedidosPorComercial.entrySet().stream()
+					.sorted(Comparator.comparing(entry -> entry.getKey().getApellido1() + " " + entry.getKey().getApellido2()))
+					.forEach(entry -> {
+						System.out.println(entry.getKey());
+						entry.getValue().forEach(pedido -> System.out.println("\t" + pedido));
+					});
 			comHome.commitTransaction();
 			
 		}
@@ -599,8 +686,14 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 						
 			
 			//TODO STREAMS
-			
-			
+
+			List<String> comercialesDeMaria = pedidos.stream()
+					.filter(pedido -> pedido.getCliente().getNombre().equals(nombreClienteBuscado))
+					.map(pedido -> pedido.getComercial().getNombre() + " " +
+							pedido.getComercial().getApellido1() + " " +
+							pedido.getComercial().getApellido2())
+					.distinct()
+					.collect(Collectors.toList());
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -624,8 +717,10 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Comercial> list = comHome.findAll();		
 		
 			//TODO STREAMS
-			
-			
+
+			List<Comercial> comercialesSinPedidos = comerciales.stream()
+					.filter(comercial -> pedidos.stream().noneMatch(pedido -> pedido.getComercial().equals(comercial)))
+					.collect(Collectors.toList());
 			comHome.commitTransaction();
 			
 		}
@@ -649,7 +744,10 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Pedido> list = pedHome.findAll();
 						
 			//TODO STREAMS
-			
+			List<Comercial> comercialesDistintos = pedidos.stream()
+					.map(Pedido::getComercial)
+					.distinct()
+					.collect(Collectors.toList());
 			
 			pedHome.commitTransaction();
 		}
@@ -672,8 +770,14 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Pedido> list = pedHome.findAll();
 						
 			//TODO STREAMS
-			
 
+			double[] maxMinTotal = pedidos.stream()
+					.mapToDouble(Pedido::getTotal)
+					.reduce(new double[]{Double.MIN_VALUE, Double.MAX_VALUE},
+							(acc, total) -> new double[]{Math.max(acc[0], total), Math.min(acc[1], total)});
+
+			System.out.println("Máximo total: " + maxMinTotal[0]);
+			System.out.println("Mínimo total: " + maxMinTotal[1]);
 			
 			pedHome.commitTransaction();
 		}
@@ -698,8 +802,13 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Cliente> list = cliHome.findAll();
 			
 			//TODO STREAMS
-			
-			
+			Map<String, Integer> maxCategoriaPorCiudad = clientes.stream()
+					.collect(Collectors.groupingBy(Cliente::getCiudad,
+							Collectors.mapping(Cliente::getCategoria, Collectors.maxBy(Integer::compareTo))))
+					.entrySet().stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().orElse(0)));
+
+
 			cliHome.commitTransaction();
 			
 		}
@@ -729,7 +838,18 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Pedido> list = pedHome.findAll();
 						
 			//TODO STREAMS
-			
+			Map<String, Pedido> maxPedidoPorClienteYFecha = pedidos.stream()
+					.collect(Collectors.groupingBy(pedido ->
+									pedido.getCliente().getId() + "_" + pedido.getFecha(),
+							Collectors.maxBy(Comparator.comparingDouble(Pedido::getTotal))));
+
+			maxPedidoPorClienteYFecha.values().forEach(pedido -> {
+				System.out.println("Cliente ID: " + pedido.getCliente().getId() +
+						", Nombre: " + pedido.getCliente().getNombre() +
+						", Apellidos: " + pedido.getCliente().getApellido1() + " " + pedido.getCliente().getApellido2() +
+						", Fecha: " + pedido.getFecha() +
+						", Valor del pedido máximo: " + pedido.getTotal());
+			});
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -753,8 +873,24 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Pedido> list = pedHome.findAll();
 					
 			//TODO STREAMS
-			
-			
+
+			Map<String, Pedido> maxPedidoPorClienteYFecha = pedidos.stream()
+					.filter(pedido -> pedido.getTotal() > 2000)
+					.collect(Collectors.groupingBy(pedido ->
+									pedido.getCliente().getId() + "_" + pedido.getFecha(),
+							Collectors.collectingAndThen(
+									Collectors.maxBy(Comparator.comparingDouble(Pedido::getTotal)),
+									Optional::orElse(null)
+                )
+        ));
+
+			maxPedidoPorClienteYFecha.values().forEach(pedido -> {
+				System.out.println("Cliente ID: " + pedido.getCliente().getId() +
+						", Nombre: " + pedido.getCliente().getNombre() +
+						", Apellidos: " + pedido.getCliente().getApellido1() + " " + pedido.getCliente().getApellido2() +
+						", Fecha: " + pedido.getFecha() +
+						", Valor del pedido máximo (> 2000 €): " + pedido.getTotal());
+			});
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -783,8 +919,29 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			Date primerDia2018 = sdf.parse("2018-01-01");
 			
 			//TODO STREAMS
-			
-			
+
+			List<ClienteConTotalPedidos> clientesConTotalPedidos2017 = pedidos.stream()
+					.filter(pedido -> pedido.getFecha().startsWith("2017"))
+					.collect(Collectors.groupingBy(
+							pedido -> pedido.getCliente(),
+							Collectors.counting()
+					))
+					.entrySet().stream()
+					.map(entry -> new ClienteConTotalPedidos(
+							entry.getKey().getId(),
+							entry.getKey().getNombre(),
+							entry.getKey().getApellido1(),
+							entry.getKey().getApellido2(),
+							entry.getValue().intValue()
+					))
+					.collect(Collectors.toList());
+
+			clientesConTotalPedidos2017.forEach(cliente -> System.out.println(
+					"ID: " + cliente.getId() +
+							", Nombre: " + cliente.getNombre() +
+							", Apellidos: " + cliente.getApellido1() + " " + cliente.getApellido2() +
+							", Número total de pedidos en 2017: " + cliente.getTotalPedidos()));
+
 			cliHome.commitTransaction();
 			
 		}
@@ -812,7 +969,32 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			
 			
 			//TODO STREAMS
-					
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+
+			List<Pedido> maxPedidoPorAnio = pedidos.stream()
+					.collect(Collectors.groupingBy(
+							pedido -> {
+								try {
+									return dateFormat.parse(pedido.getFecha()).getYear() + 1900;
+								} catch (ParseException e) {
+									e.printStackTrace();
+									return 0;
+								}
+							},
+							Collectors.collectingAndThen(
+									Collectors.maxBy(Comparator.comparingDouble(Pedido::getTotal)),
+									Optional::orElse(null)
+                )
+        ))
+        .entrySet().stream()
+					.sorted(Map.Entry.comparingByKey())
+					.map(Map.Entry::getValue)
+					.collect(Collectors.toList());
+
+			maxPedidoPorAnio.forEach(pedido -> System.out.println(
+					"Año: " + getAnio(pedido.getFecha()) +
+							", Pedido de máximo valor: " + pedido));
 					
 			pedHome.commitTransaction();
 		}
@@ -838,9 +1020,23 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			Calendar calendar = Calendar.getInstance();
 			
 			//TODO STREAMS
-					
-							
-					
+
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+			Map<Integer, Long> pedidosPorAnio = pedidos.stream()
+					.collect(Collectors.groupingBy(
+							pedido -> {
+								try {
+									return dateFormat.parse(pedido.getFecha()).getYear() + 1900;
+								} catch (ParseException e) {
+									e.printStackTrace();
+									return 0;
+								}
+							},
+							Collectors.counting()
+					));
+
+
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
@@ -870,7 +1066,16 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			Date primerDia2020 = sdf.parse("2020-01-01");
 			
 			//TODO STREAMS
-			
+			Optional<Cliente> clientePedidoMasCaro2019 = pedidos.stream()
+					.filter(pedido -> pedido.getFecha().startsWith("2019"))
+					.max(Comparator.comparingDouble(Pedido::getTotal))
+					.map(Pedido::getCliente);
+
+			clientePedidoMasCaro2019.ifPresent(cliente -> System.out.println(
+					"Cliente con pedido más caro en 2019: " +
+							"ID: " + cliente.getId() +
+							", Nombre: " + cliente.getNombre() +
+							", Apellidos: " + cliente.getApellido1() + " " + cliente.getApellido2()));
 				
 			pedHome.commitTransaction();
 		}
@@ -895,7 +1100,16 @@ Cliente [id=2, nombre=Adela, apellido1=Salas, apellido2=D�az, ciudad=Granada, 
 			List<Pedido> list = pedHome.findAll();
 			
 			//TODO STREAMS
-				
+			DoubleSummaryStatistics estadisticasTotales = pedidos.stream()
+					.collect(Collectors.summarizingDouble(Pedido::getTotal));
+
+			System.out.println("Estadísticas del total de todos los pedidos:");
+			System.out.println("Suma: " + estadisticasTotales.getSum());
+			System.out.println("Promedio: " + estadisticasTotales.getAverage());
+			System.out.println("Máximo: " + estadisticasTotales.getMax());
+			System.out.println("Mínimo: " + estadisticasTotales.getMin());
+			System.out.println("Número de pedidos: " + estadisticasTotales.getCount());
+
 			pedHome.commitTransaction();
 		}
 		catch (RuntimeException e) {
